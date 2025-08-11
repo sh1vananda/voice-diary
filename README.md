@@ -31,7 +31,10 @@ A simple voice diary app with AI-powered grammar correction.
 
 1. Deploy to Vercel normally
 2. **Important**: Users need to run Ollama locally for AI features to work.
-3. The app calls your local Ollama directly from the browser using `NEXT_PUBLIC_OLLAMA_URL` (default `http://localhost:11434`).
+3. The app calls your local Ollama directly from the browser using `NEXT_PUBLIC_OLLAMA_URL` (default `http://localhost:11434`). If deployed on Vercel, users must have Ollama running locally. If you see "No models available", ensure:
+   - Ollama is running: `ollama serve`
+   - The model is pulled: `ollama pull qwen3:4b-thinking`
+   - The browser can reach `http://localhost:11434` or `http://127.0.0.1:11434`.
 
 ### For Users
 

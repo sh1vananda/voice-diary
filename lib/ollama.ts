@@ -29,9 +29,43 @@ class OllamaClient {
         }
     }
 
+    private getBaseUrlCandidates(): string[] {
+        const urls = new Set<string>()
+        const configured = this.baseUrl
+        urls.add(configured)
+        try {
+            if (typeof window !== 'undefined') {
+                const saved = localStorage.getItem('voiceDiaryOllamaUrl')
+                if (saved) urls.add(saved)
+            }
+        } catch {}
+        // Add common localhost variants
+        urls.add(configured.replace('localhost', '127.0.0.1'))
+        urls.add(configured.replace('localhost', '[::1]'))
+        urls.add('http://127.0.0.1:11434')
+        urls.add('http://localhost:11434')
+        return Array.from(urls)
+    }
+
+    private async tryFetch(path: string, init: RequestInit, timeoutMs: number): Promise<Response> {
+        const errors: unknown[] = []
+        for (const base of this.getBaseUrlCandidates()) {
+            try {
+                const url = `${base}${path}`
+                const res = await this.fetchWithTimeout(url, init, timeoutMs)
+                if (res.ok) return res
+                // consider non-ok as failure and try next
+                errors.push(new Error(`HTTP ${res.status} @ ${url}`))
+            } catch (e) {
+                errors.push(e)
+            }
+        }
+        throw errors[errors.length - 1] || new Error('All Ollama endpoints failed')
+    }
+
     async isAvailable(): Promise<boolean> {
         try {
-            const response = await this.fetchWithTimeout(`${this.baseUrl}/api/tags`, { method: 'GET' }, 4000)
+            const response = await this.tryFetch(`/api/tags`, { method: 'GET' }, 3500)
             return response.ok
         } catch {
             return false
@@ -40,7 +74,7 @@ class OllamaClient {
 
     async getAvailableModels(): Promise<string[]> {
         try {
-            const response = await this.fetchWithTimeout(`${this.baseUrl}/api/tags`, { method: 'GET' }, 5000)
+            const response = await this.tryFetch(`/api/tags`, { method: 'GET' }, 4000)
             if (!response.ok) return []
 
             const data: OllamaModelsResponse = await response.json()
@@ -71,7 +105,7 @@ class OllamaClient {
         if (!text.trim()) return text
 
         try {
-            const response = await this.fetchWithTimeout(`${this.baseUrl}/api/generate`, {
+            const response = await this.tryFetch(`/api/generate`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
