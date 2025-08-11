@@ -16,7 +16,7 @@ interface OllamaModelsResponse {
 
 class OllamaClient {
     private baseUrl = process.env.NEXT_PUBLIC_OLLAMA_URL || 'http://localhost:11434'
-    private model = 'qwen3:4b-thinking' // standardized default model
+    private model = 'gemma3:4b' // default model
 
     constructor() {
         if (typeof window !== 'undefined') {
@@ -30,21 +30,23 @@ class OllamaClient {
     }
 
     private getBaseUrlCandidates(): string[] {
-        const urls = new Set<string>()
+        const candidates: string[] = []
         const configured = this.baseUrl
-        urls.add(configured)
         try {
             if (typeof window !== 'undefined') {
                 const saved = localStorage.getItem('voiceDiaryOllamaUrl')
-                if (saved) urls.add(saved)
+                if (saved) candidates.push(saved)
             }
         } catch {}
-        // Add common localhost variants
-        urls.add(configured.replace('localhost', '127.0.0.1'))
-        urls.add(configured.replace('localhost', '[::1]'))
-        urls.add('http://127.0.0.1:11434')
-        urls.add('http://localhost:11434')
-        return Array.from(urls)
+        // Prefer localhost for HTTPS exceptions
+        candidates.push('http://localhost:11434')
+        if (!candidates.includes(configured)) candidates.push(configured)
+        const as127 = configured.replace('localhost', '127.0.0.1')
+        const asIPv6 = configured.replace('localhost', '[::1]')
+        if (!candidates.includes(as127)) candidates.push(as127)
+        if (!candidates.includes('http://127.0.0.1:11434')) candidates.push('http://127.0.0.1:11434')
+        if (!candidates.includes(asIPv6)) candidates.push(asIPv6)
+        return candidates
     }
 
     private async tryFetch(path: string, init: RequestInit, timeoutMs: number): Promise<Response> {
