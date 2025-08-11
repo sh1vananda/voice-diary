@@ -1,4 +1,4 @@
-import type { DiaryEntry } from "@/components/voice-diary"
+import type { DiaryEntry } from "@/types/diary"
 
 const STORAGE_KEY = "voiceDiaryEntries"
 const STORAGE_VERSION = "1.1"

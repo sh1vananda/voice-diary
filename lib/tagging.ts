@@ -10,7 +10,7 @@ export const ESSENTIAL_TAGS = [
 export type Tag = typeof ESSENTIAL_TAGS[number]
 
 class TaggingManager {
-  private baseUrl = 'http://localhost:11434'
+  private baseUrl = process.env.NEXT_PUBLIC_OLLAMA_URL || 'http://localhost:11434'
   private model = 'qwen3:4b-thinking'
 
   async generateTags(text: string): Promise<Tag[]> {

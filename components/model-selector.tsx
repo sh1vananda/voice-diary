@@ -41,6 +41,9 @@ export function ModelSelector({ onModelChange }: ModelSelectorProps) {
 
   const handleModelSelect = (model: string) => {
     ollama.setModel(model)
+    try {
+      localStorage.setItem('voiceDiaryModel', model)
+    } catch {}
     setCurrentModel(model)
     setIsOpen(false)
     onModelChange?.(model)
@@ -68,7 +71,7 @@ export function ModelSelector({ onModelChange }: ModelSelectorProps) {
   }
 
   return (
-    <div className="relative">
+    <div className="relative inline-block mt-1">
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-1 text-xs text-gray-300 hover:text-white transition-colors"

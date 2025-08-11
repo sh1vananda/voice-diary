@@ -16,67 +16,10 @@ import { format } from "date-fns"
 
 import { ollama } from "@/lib/ollama"
 import { transcriptionManager } from "@/lib/transcription"
+import { ModelSelector } from "@/components/model-selector"
+import type { DiaryEntry } from "@/types/diary"
 
-// Simple model selector component
-function ModelSelector() {
-  const [models, setModels] = useState<string[]>([])
-  const [currentModel, setCurrentModel] = useState("")
-  const [isOpen, setIsOpen] = useState(false)
-
-  useEffect(() => {
-    const loadModels = async () => {
-      const availableModels = await ollama.getAvailableModels()
-      setModels(availableModels)
-      setCurrentModel(ollama.getCurrentModel())
-    }
-    loadModels()
-  }, [])
-
-  const handleModelChange = (model: string) => {
-    ollama.setModel(model)
-    setCurrentModel(model)
-    setIsOpen(false)
-  }
-
-  if (models.length === 0) return null
-
-  return (
-    <div className="relative mt-1">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="text-xs text-gray-400 hover:text-white"
-      >
-        {currentModel.replace(':', ' ') || 'Select Model'}
-      </button>
-      
-      {isOpen && (
-        <>
-          <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
-          <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-1 bg-zinc-800 border border-zinc-700 rounded shadow-lg z-20 min-w-32">
-            {models.map((model) => (
-              <button
-                key={model}
-                onClick={() => handleModelChange(model)}
-                className="block w-full px-3 py-1 text-xs text-left text-gray-300 hover:bg-zinc-700 hover:text-white"
-              >
-                {model.replace(':', ' ')}
-              </button>
-            ))}
-          </div>
-        </>
-      )}
-    </div>
-  )
-}
-
-export interface DiaryEntry {
-  id: string
-  date: Date
-  audioBlob: Blob | null
-  transcription: string
-  isRecording: boolean
-  isTranscribing: boolean
-}
+// DiaryEntry type moved to types/diary
 
 interface VoiceDiaryProps {
   entry: DiaryEntry
@@ -167,6 +110,7 @@ export function VoiceDiary({
   const [recordingError, setRecordingError] = useState<string | null>(null)
   const [recordingTime, setRecordingTime] = useState(0)
   const [liveTranscript, setLiveTranscript] = useState("")
+  const [tags, setTags] = useState<string[]>(entry.tags || [])
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
@@ -217,6 +161,7 @@ export function VoiceDiary({
     setRecordingError(null)
     setRecordingTime(0)
     setLiveTranscript("")
+    setTags(entry.tags || [])
   }, [entry.id])
 
   const startRecording = async () => {
@@ -316,7 +261,7 @@ export function VoiceDiary({
   }
 
   const processTranscription = async (rawTranscription: string, entry: DiaryEntry) => {
-    console.log("Processing transcription:", rawTranscription?.substring(0, 50) + "...")
+    // begin processing
     
     if (!rawTranscription || !rawTranscription.trim()) {
       // No transcription, just update status
@@ -330,7 +275,6 @@ export function VoiceDiary({
 
     try {
       // Step 1: Correct the NEW transcription segment with AI
-      console.log("Correcting new segment with AI...")
       const correctedSegment = await ollama.correctGrammar(rawTranscription)
       
       // Step 2: Append corrected segment to existing text
@@ -338,19 +282,18 @@ export function VoiceDiary({
       const separator = existingText && existingText.trim() ? " " : ""
       const finalText = existingText ? `${existingText}${separator}${correctedSegment}` : correctedSegment
       
-      console.log("Original segment:", rawTranscription.substring(0, 50))
-      console.log("Corrected segment:", correctedSegment.substring(0, 50))
-      console.log("Final combined text:", finalText.substring(0, 100))
+      // correction complete
       
       // Step 3: Update with final corrected text
       onEntryUpdate({
         ...entry,
         transcription: finalText.trim(),
         isTranscribing: false,
+        tags: entry.tags || [],
       })
       
     } catch (error) {
-      console.error("AI correction failed, using raw transcription:", error)
+      // AI correction failed, use raw transcript
       
       // Fallback: append raw transcription if AI fails
       const existingText = entry.transcription || ""
@@ -380,11 +323,15 @@ export function VoiceDiary({
               <ArrowLeft className="w-4 h-4" />
             </button>
 
-            <div className="text-center">
-              <div className="text-lg font-medium text-white">
-                {format(new Date(currentEntry.date), "EEEE, MMM d")}
+            <div className="flex-1">
+              <div className="text-center">
+                <div className="text-lg font-medium text-white">
+                  {format(new Date(currentEntry.date), "EEEE, MMM d")}
+                </div>
+                <div className="flex justify-center">
+                  <ModelSelector />
+                </div>
               </div>
-              <ModelSelector />
             </div>
 
             <button

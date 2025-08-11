@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react"
 import { CheckCircle, XCircle, Loader2 } from "lucide-react"
 import { ollama } from "@/lib/ollama"
-import { ModelSelector } from "@/components/model-selector"
 
 export function AIStatus() {
     const [status, setStatus] = useState<'checking' | 'available' | 'unavailable'>('checking')
@@ -62,11 +61,6 @@ export function AIStatus() {
         }
     }
 
-    const handleModelChange = (_model: string) => {
-        // Recheck status when model changes
-        checkAIStatus()
-    }
-
     return (
         <div className="flex flex-col items-center gap-1">
             <div className="flex items-center gap-2 text-sm">
@@ -83,9 +77,6 @@ export function AIStatus() {
                     </button>
                 )}
             </div>
-            {status === 'available' && (
-                <ModelSelector onModelChange={handleModelChange} />
-            )}
         </div>
     )
 }

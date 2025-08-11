@@ -1,10 +1,12 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { VoiceDiary, type DiaryEntry } from "@/components/voice-diary"
+import { VoiceDiary } from "@/components/voice-diary"
+import type { DiaryEntry } from "@/types/diary"
 import { HomePage } from "@/components/home-page"
 import { StorageManager } from "@/lib/storage"
 import { Mic, AlertCircle } from "lucide-react"
+import { AIStatus } from "@/components/ai-status"
 
 export default function Home() {
   const [entries, setEntries] = useState<DiaryEntry[]>([])

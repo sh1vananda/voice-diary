@@ -16,11 +16,22 @@ interface OllamaModelsResponse {
 
 class OllamaClient {
     private baseUrl = process.env.NEXT_PUBLIC_OLLAMA_URL || 'http://localhost:11434'
-    private model = 'gemma3:4b' // default model
+    private model = 'qwen3:4b-thinking' // standardized default model
+
+    constructor() {
+        if (typeof window !== 'undefined') {
+            try {
+                const saved = localStorage.getItem('voiceDiaryModel')
+                if (saved) {
+                    this.model = saved
+                }
+            } catch {}
+        }
+    }
 
     async isAvailable(): Promise<boolean> {
         try {
-            const response = await fetch(`${this.baseUrl}/api/tags`)
+            const response = await this.fetchWithTimeout(`${this.baseUrl}/api/tags`, { method: 'GET' }, 4000)
             return response.ok
         } catch {
             return false
@@ -29,7 +40,7 @@ class OllamaClient {
 
     async getAvailableModels(): Promise<string[]> {
         try {
-            const response = await fetch(`${this.baseUrl}/api/tags`)
+            const response = await this.fetchWithTimeout(`${this.baseUrl}/api/tags`, { method: 'GET' }, 5000)
             if (!response.ok) return []
 
             const data: OllamaModelsResponse = await response.json()
@@ -60,9 +71,7 @@ class OllamaClient {
         if (!text.trim()) return text
 
         try {
-            console.log(`Correcting: "${text.substring(0, 50)}..."`)
-
-            const response = await fetch(`${this.baseUrl}/api/generate`, {
+            const response = await this.fetchWithTimeout(`${this.baseUrl}/api/generate`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -75,10 +84,10 @@ class OllamaClient {
                     stream: false,
                     options: {
                         temperature: 0.1,
-                        max_tokens: Math.min(text.length + 50, 300),
+                        max_tokens: Math.min(Math.max(64, Math.ceil(text.length * 1.3)), 240),
                     }
                 }),
-            })
+            }, 8000)
 
             if (!response.ok) {
                 throw new Error(`API error: ${response.status}`)
@@ -86,8 +95,6 @@ class OllamaClient {
 
             const data: OllamaResponse = await response.json()
             let result = data.response.trim()
-
-            console.log(`Raw AI response: "${result.substring(0, 100)}..."`)
 
             // Aggressive cleaning to extract just the corrected text
             result = result.replace(/<think>[\s\S]*?<\/think>/gi, '').trim()
@@ -121,15 +128,32 @@ class OllamaClient {
 
             // Final validation - if result looks wrong or too different, return original
             if (!result || result.length < 3 || result.length > text.length * 3) {
-                console.log('AI correction looks wrong, using original')
                 return text
             }
-
-            console.log(`Final corrected: "${result.substring(0, 50)}..."`)
             return result
         } catch (error) {
-            console.error('AI correction failed:', error)
             return text
+        }
+    }
+
+    private async fetchWithTimeout(input: RequestInfo | URL, init: RequestInit, timeoutMs: number): Promise<Response> {
+        const controller = new AbortController()
+        const timeout = setTimeout(() => controller.abort(), timeoutMs)
+        try {
+            const response = await fetch(input, { ...init, signal: controller.signal })
+            return response
+        } catch (err) {
+            // Try 127.0.0.1 fallback if baseUrl uses localhost
+            try {
+                const url = typeof input === 'string' ? input : input.toString()
+                if (url.includes('localhost')) {
+                    const fallbackUrl = url.replace('localhost', '127.0.0.1')
+                    return await fetch(fallbackUrl, { ...init })
+                }
+            } catch {}
+            throw err
+        } finally {
+            clearTimeout(timeout)
         }
     }
 

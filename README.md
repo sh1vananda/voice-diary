@@ -17,7 +17,8 @@ A simple voice diary app with AI-powered grammar correction.
 ### Prerequisites
 
 1. **Ollama** - Install from [ollama.ai](https://ollama.ai)
-2. **AI Model** - Pull a model like `ollama pull gemma3:4b`
+2. **AI Model** - Pull the model: `ollama pull qwen3:4b-thinking`
+3. Optionally set `NEXT_PUBLIC_OLLAMA_URL` to your local Ollama endpoint (defaults to `http://localhost:11434`).
 
 ### Local Development
 
@@ -29,15 +30,15 @@ A simple voice diary app with AI-powered grammar correction.
 ### Deployment (Vercel)
 
 1. Deploy to Vercel normally
-2. **Important**: Users need to run Ollama locally for AI features to work
-3. Set environment variable `NEXT_PUBLIC_OLLAMA_URL=http://localhost:11434`
+2. **Important**: Users need to run Ollama locally for AI features to work.
+3. The app calls your local Ollama directly from the browser using `NEXT_PUBLIC_OLLAMA_URL` (default `http://localhost:11434`).
 
 ### For Users
 
 To use AI features after deployment:
 
 1. Install Ollama on your computer
-2. Pull a model: `ollama pull gemma3:4b`
+2. Pull a model: `ollama pull qwen3:4b-thinking`
 3. Start Ollama: `ollama serve`
 4. The app will automatically connect to your local Ollama instance
 

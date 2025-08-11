@@ -2,14 +2,7 @@ import { useState } from "react"
 import { Plus, Search, Mic, Play, Trash2 } from "lucide-react"
 import { format, isToday, isYesterday, isThisWeek } from "date-fns"
 import { ConfirmModal } from "@/components/ui/modal"
-export interface DiaryEntry {
-  id: string
-  date: Date
-  audioBlob: Blob | null
-  transcription: string
-  isRecording: boolean
-  isTranscribing: boolean
-}
+import type { DiaryEntry } from "@/types/diary"
 
 interface HomePageProps {
   entries: DiaryEntry[]
